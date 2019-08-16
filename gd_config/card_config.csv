@@ -1,0 +1,5 @@
+INT_Id,INT_CardId,STR_Name,INT_Level,INT_AtkLower,INT_AtkUpper,INT_Speed,INT_SkillId,INT_Hp
+1,1,地瓜,1,3,5,4,0,10
+2,2,小哥,1,2,6,4,0,10
+3,3,cj,1,3,5,3,0,15
+4,4,富贵,1,2,6,2,0,16

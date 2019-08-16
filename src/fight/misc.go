@@ -1,18 +1,19 @@
-package main 
+package fight
 
-import(
+import (
 	"math/rand"
 	"time"
 )
+
 var (
-	rd             *rand.Rand
+	rd *rand.Rand
 )
 
 func init() {
 	rd = rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
-func RandomIds(ids []int, num int) []int{
+func RandomIds(ids []int, num int) []int {
 	if len(ids) <= num {
 		return ids
 	}
@@ -27,7 +28,7 @@ func RandomIds(ids []int, num int) []int{
 		}
 	}
 
-	for id, _:= range idMap{
+	for id, _ := range idMap {
 		newIds = append(newIds, id)
 	}
 
@@ -35,9 +36,8 @@ func RandomIds(ids []int, num int) []int{
 }
 
 func RandomHappen(percent int) bool {
-	return rd.Intn(100) > percent	
+	return rd.Intn(100) > percent
 }
-
 
 func Random(num int) int {
 	n := rd.Intn(num)
@@ -46,4 +46,15 @@ func Random(num int) int {
 	}
 	return n
 }
+
+func RandomBetween2Num(low int64 , upper int64) int64 {
+	num := int(upper - low)
+	if num < 0 {
+		return 0
+	}
+	return low + int64(Random(num))
+}
+
+
+
 

@@ -1,11 +1,11 @@
-package main
+package fight
 
 import (
 	"fmt"
 )
 
 type AtkAction struct {
-	Action int16 //效果，伤害，闪避， 反击等
+	Action []int16 //效果，伤害，闪避， 反击等
 	Damage int64
 }
 
@@ -49,7 +49,7 @@ func pktAtkDetail(atkCard *CardInfo, defCard *CardInfo, atkSkill *AtkSkill, acti
 	}
 }
 
-func pktAtkAction(action int16, damage int64) *AtkAction {
+func pktAtkAction(action []int16, damage int64) *AtkAction {
 	return &AtkAction{
 		Action: action,
 		Damage: damage,
@@ -65,50 +65,49 @@ func pktAtkAction(action int16, damage int64) *AtkAction {
 //普通攻击
 func NormalAtk(atkCard *CardInfo, defCard *CardInfo, atkSkill *AtkSkill) (int16, *AtkDetail) {
 	damage := atkCard.NormalDamage()
-	Action := int16(0)
+	action := make([]int16, 0)
 	if defCard.TriggerDodge() {
-		Action = ACTION_DODGE
+		action = append(action, int16(ACTION_DODGE))
 		damage = 0
 	}
 
 	defCard.LoseHp(damage)
-	atkDetail := pktAtkDetail(atkCard, defCard, atkSkill, pktAtkAction(Action, damage))
+	atkDetail := pktAtkDetail(atkCard, defCard, atkSkill, pktAtkAction(action, damage))
 
 	if defCard.TriggerFightBack() {
 		ret, fightBack := FightBackAtk(defCard, atkCard, &AtkSkill{ATK_TYPE_NORMAL_ATK, FIGHT_BACK_ATK})
-		if ret == OK{
+		if ret == OK {
+			action = append(action, int16(ACTION_FIGHT_BACK))
 			atkDetail.Trigger = append(atkDetail.Trigger, fightBack)
 		}
 	}
+	atkDetail.ActionType = action
 	return OK, atkDetail
 }
 
 //反击效果
 func FightBackAtk(atkCard *CardInfo, defCard *CardInfo, atkSkill *AtkSkill) (int16, *AtkDetail) {
 	damage := atkCard.NormalDamage()
-	Action := int16(0)
+	action := make([]int16, 0)
 	if defCard.TriggerDodge() {
-		Action = ACTION_DODGE
+		action = append(action, int16(ACTION_DODGE))
 		damage = 0
 	}
 
 	defCard.LoseHp(damage)
-	atkDetail := pktAtkDetail(atkCard, defCard, atkSkill, pktAtkAction(Action, damage))
+	atkDetail := pktAtkDetail(atkCard, defCard, atkSkill, pktAtkAction(action, damage))
 	return OK, atkDetail
 }
 
 //技能直接攻击
 func SkillAttack(atkCard *CardInfo, defCard *CardInfo, atkSkill *AtkSkill) (int16, *AtkDetail) {
-	Action := int16(0)
+	action := make([]int16, 0)
 	damage := atkCard.GetSkillDamage(atkSkill.SkillType)
-	if defCard.TriggerDodge(){
-		Action = ACTION_DODGE
+	if defCard.TriggerDodge() {
+		action = append(action, int16(ACTION_DODGE))
 		damage = 0
 	}
 	defCard.LoseHp(damage)
-	atkDetail := pktAtkDetail(atkCard, defCard, atkSkill, pktAtkAction(Action, damage))
+	atkDetail := pktAtkDetail(atkCard, defCard, atkSkill, pktAtkAction(action, damage))
 	return OK, atkDetail
 }
-
-
-
