@@ -15,8 +15,9 @@ var Skills map[int16]behavior
 
 func init() {
 	Skills = make(map[int16]behavior)
-	registerSkill(NORMAL_ATK, NormalAtk)
-	registerSkill(FIGHT_BACK_ATK, FightBackAtk)
+	registerSkill(ATK_TYPE_NORMAL_ATK, NormalAtk)
+	registerSkill(ATK_TYPE_SKILL_DIRECT, SkillAttack)
+
 }
 
 func registerSkill(skillId int16, fn behavior) {
@@ -74,7 +75,7 @@ func NormalAtk(atkCard *CardInfo, defCard *CardInfo, atkSkill *AtkSkill) (int16,
 	atkDetail := pktAtkDetail(atkCard, defCard, atkSkill, pktAtkAction(Action, damage))
 
 	if defCard.TriggerFightBack() {
-		ret, fightBack := FightBackAtk(defCard, atkCard, &AtkSkill{FIGHT_BACK_ATK})
+		ret, fightBack := FightBackAtk(defCard, atkCard, &AtkSkill{ATK_TYPE_NORMAL_ATK, FIGHT_BACK_ATK})
 		if ret == OK{
 			atkDetail.Trigger = append(atkDetail.Trigger, fightBack)
 		}
@@ -95,3 +96,19 @@ func FightBackAtk(atkCard *CardInfo, defCard *CardInfo, atkSkill *AtkSkill) (int
 	atkDetail := pktAtkDetail(atkCard, defCard, atkSkill, pktAtkAction(Action, damage))
 	return OK, atkDetail
 }
+
+//技能直接攻击
+func SkillAttack(atkCard *CardInfo, defCard *CardInfo, atkSkill *AtkSkill) (int16, *AtkDetail) {
+	Action := int16(0)
+	damage := atkCard.GetSkillDamage(atkSkill.SkillType)
+	if defCard.TriggerDodge(){
+		Action = ACTION_DODGE
+		damage = 0
+	}
+	defCard.LoseHp(damage)
+	atkDetail := pktAtkDetail(atkCard, defCard, atkSkill, pktAtkAction(Action, damage))
+	return OK, atkDetail
+}
+
+
+

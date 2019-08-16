@@ -1,5 +1,17 @@
 package main
 
+type SkillInfo struct {
+	SkillId int16
+	Level   int16
+}
+
+func (skill *SkillInfo)Trigger() bool {
+	return RandomHappen(50)
+}
+
+func (skill *SkillInfo)TargetNum() int {
+	return Random(3)
+}
 
 type CardInfo struct {
 	UserId    int64
@@ -9,6 +21,7 @@ type CardInfo struct {
 	Speed     int16
 	Hp        int64
 	InitHp    int64
+	Skills   map[int16]*SkillInfo  //pos对应点的技能
 }
 
 type SortCards []*CardInfo
@@ -43,6 +56,12 @@ func (card *CardInfo) TriggerDodge() bool {
 
 func (card *CardInfo) TriggerFightBack() bool {
 	return RandomHappen(50)
+}
+
+
+
+func (card *CardInfo) GetSkillDamage(skillId int16) int64 {
+	return int64(Random(10))
 }
 
 

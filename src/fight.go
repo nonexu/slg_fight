@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	FIGHT_MAX_ROUND = int16(1)
+	FIGHT_MAX_ROUND = int16(8)
 )
 
 type Fighter struct {
@@ -33,7 +33,9 @@ func (fighter *Fighter) AddCard(userId int64, pos int16, cardId int16, cardLevel
 		Speed:     speed,
 		Hp:        hp,
 		InitHp:    hp,
+		Skills:   make(map[int16]*SkillInfo),
 	}
+	card.Skills[1] = &SkillInfo{3,1}
 	fighter.Cards = append(fighter.Cards, card)
 }
 
@@ -66,8 +68,8 @@ type AtkDetail struct {
 }
 
 type AtkSkill struct {
-	//Atk       int16 //攻击类型，普通攻击，技能攻击，反击
-	SkillType int16 ////特效类型 技能
+	AtkType       int16 //攻击类型，普通攻击，技能攻击，反击
+	SkillType     int16 ////特效类型 技能
 }
 
 type FightProcess struct {
@@ -178,9 +180,40 @@ func (fight *FightBattle) GetAtkTarget(atkCard *CardInfo, num int)[]*CardInfo {
 //开始攻击
 func (fight *FightBattle) AtkFight(atkCard *CardInfo) {
 	//普通攻击
+	fight.NormalAtk(atkCard)
+	fight.SkillAtk(atkCard)
+}
+
+//普通攻击
+func (fight *FightBattle) NormalAtk(atkCard *CardInfo) {
 	targets := fight.GetAtkTarget(atkCard, 1)
 	for _, card := range targets {
-		ret, atkInfo := fight.DoAtk(atkCard, card, &AtkSkill{NORMAL_ATK})
+		ret, atkInfo := fight.DoAtk(atkCard, card, &AtkSkill{AtkType:ATK_TYPE_NORMAL_ATK, SkillType: NORMAL_ATK })
+		if ret == OK {
+			fight.Process[fight.Round-1].AtkTree = append(fight.Process[fight.Round-1].AtkTree, atkInfo)
+		}
+	}
+}
+
+//卡牌技能攻击
+func (fight *FightBattle) SkillAtk(atkCard *CardInfo) {
+	for i:= int16(0);i<=3;i++{
+		skill, ok := atkCard.Skills[i] 
+		if !ok {
+			continue
+		}
+		fight.CardSkillAction(atkCard, skill)
+	}
+}
+
+func (fight *FightBattle) CardSkillAction (atkCard *CardInfo, skill *SkillInfo){
+	if !skill.Trigger() {
+		return
+	}
+
+	targets := fight.GetAtkTarget(atkCard, skill.TargetNum())
+	for _, card := range targets {
+		ret, atkInfo := fight.DoAtk(atkCard, card, &AtkSkill{AtkType:ATK_TYPE_SKILL_DIRECT, SkillType: SKILL_DIRECT_ATK })
 		if ret == OK {
 			fight.Process[fight.Round-1].AtkTree = append(fight.Process[fight.Round-1].AtkTree, atkInfo)
 		}
@@ -188,7 +221,7 @@ func (fight *FightBattle) AtkFight(atkCard *CardInfo) {
 }
 
 func (fight *FightBattle) DoAtk(atkCard *CardInfo, defCard *CardInfo, atkSkill *AtkSkill) (int16, *AtkDetail) {
-	return Invoke(atkSkill.SkillType, atkCard, defCard, atkSkill)
+	return Invoke(atkSkill.AtkType, atkCard, defCard, atkSkill)
 }
 
 func (fight *FightBattle) Result() bool {
@@ -230,24 +263,12 @@ func InitFight() *FightBattle {
 		Process: make([]*FightProcess, 0),
 	}
 
-	fightBattle.AddCard(true, 10000, 1, 1, 1, 1, 10)
-	fightBattle.AddCard(true, 10000, 2, 2, 1, 3, 10)
-	fightBattle.AddCard(true, 10000, 3, 3, 1, 2, 10)
+	fightBattle.AddCard(true, 10000, 1, 1, 1, 1, 20)
+	//fightBattle.AddCard(true, 10000, 2, 2, 1, 3, 100)
+	//fightBattle.AddCard(true, 10000, 3, 3, 1, 2, 100)
 	fightBattle.AddCard(false, 20000, 1, 1, 1, 2, 10)
-	fightBattle.AddCard(false, 20000, 2, 2, 1, 3, 10)
-	fightBattle.AddCard(false, 20000, 3, 3, 1, 2, 10)
+	//fightBattle.AddCard(false, 20000, 2, 2, 1, 3, 100)
+	//fightBattle.AddCard(false, 20000, 3, 3, 1, 2, 100)
 	return fightBattle
 }
 
-func main() {
-	fight := InitFight()
-	fight.StartFight()
-	if fight.Result() {
-		fmt.Println("Atk win")
-	} else {
-		fmt.Println("Atk lose")
-	}
-	fmt.Println("fight start")
-	fight.DebugProcess()
-	fmt.Println("fight end")
-}

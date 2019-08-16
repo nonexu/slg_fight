@@ -39,4 +39,11 @@ func RandomHappen(percent int) bool {
 }
 
 
+func Random(num int) int {
+	n := rd.Intn(num)
+	if n == 0 {
+		n = num
+	}
+	return n
+}
 
