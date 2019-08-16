@@ -54,15 +54,15 @@ func (fighter *Fighter) DebugFighterInfo() {
 			continue
 		}
 
-		str := fmt.Sprintf("Pos[%v] card[%v] level[%v] hp[%v] speed[%v]", card.Pos, cardCfg.Name, card.CardLevel, cardCfg.Hp, cardCfg.Speed)
+		str := fmt.Sprintf("    位置[%v] 武将[%v] 等级[%v] 血量[%v] 速度[%v]", card.Pos, cardCfg.Name, card.CardLevel, cardCfg.Hp, cardCfg.Speed)
 		fmt.Println(str)
 	}
 }
 
 func (fight *FightBattle) DebugInitInfo() {
-	fmt.Println("atk:", fight.GetAtkName())
+	fmt.Println("进攻方:", fight.GetAtkName())
 	fight.AtkInfo.DebugFighterInfo()
-	fmt.Println("def:", fight.GetDefName())
+	fmt.Println("防守方:", fight.GetDefName())
 	fight.DefInfo.DebugFighterInfo()
 }
 
@@ -113,9 +113,9 @@ func (atkProcess *AtkDetail) DebugAtk() {
 		}
 	}
 
-	str1 := fmt.Sprintf("    atkUser[%v]'card[%v] 使用  [%v] 攻击 defUser[%v]'card[%v]", atkName, atkCardCfg.Name, skillCfg.Name,
+	str1 := fmt.Sprintf("    [%v]'的[%v] 使用  [%v] 攻击 [%v]'的[%v]", atkName, atkCardCfg.Name, skillCfg.Name,
 		defName, defCardCfg.Name)
-	str2 := fmt.Sprintf("    defUser[%v]'card[%v] 触发 特效[%v] and 失去 hp[%v] newhp[%v]", defName, defCardCfg.Name,
+	str2 := fmt.Sprintf("    [%v]'的[%v] 触发 特效[%v] 从而失去血量[%v] 当前血量[%v]", defName, defCardCfg.Name,
 		actionStr, atkProcess.LoseHp, atkProcess.FinalHp)
 	//str2 := fmt.Sprintf("    defUser[%v]'card[%v] 触发 特效[%v] and 失去 hp[%v] newhp[%v] and Trigger skill[%v]", defName, defCardCfg.Name,
 	//	actionStr, atkProcess.LoseHp, atkProcess.FinalHp, len(atkProcess.Trigger))
@@ -123,7 +123,7 @@ func (atkProcess *AtkDetail) DebugAtk() {
 	fmt.Println(str2)	
 
 	if atkProcess.FinalHp == 0 {
-		str3 := fmt.Sprintf("    defUser[%v]'card[%v] dead", defName, defCardCfg.Name)
+		str3 := fmt.Sprintf("    [%v]'的[%v] 无法战斗", defName, defCardCfg.Name)
 		fmt.Println(str3)	
 	}
 
@@ -134,8 +134,7 @@ func (atkProcess *AtkDetail) DebugAtk() {
 }
 
 func (process *FightProcess) Debug() {
-	fmt.Println("this is round:", process.Round)
-
+	fmt.Printf("第 %v 回合\n", process.Round)
 	for _, atkDetail := range process.AtkTree {
 		atkDetail.DebugAtk()
 	}
@@ -229,6 +228,10 @@ func (fight *FightBattle) AtkFight(atkCard *CardInfo) {
 
 //普通攻击
 func (fight *FightBattle) NormalAtk(atkCard *CardInfo) {
+	if atkCard.Dead() {
+		return
+	}
+
 	targets := fight.GetAtkTarget(atkCard, 1)
 	for _, card := range targets {
 		ret, atkInfo := fight.DoAtk(atkCard, card, &AtkSkill{AtkType: ATK_TYPE_NORMAL_ATK, SkillType: NORMAL_ATK})
@@ -240,6 +243,9 @@ func (fight *FightBattle) NormalAtk(atkCard *CardInfo) {
 
 //卡牌技能攻击
 func (fight *FightBattle) SkillAtk(atkCard *CardInfo) {
+	if atkCard.Dead(){
+		return
+	}
 	for i := int16(0); i <= 3; i++ {
 		skill, ok := atkCard.Skills[i]
 		if !ok {
@@ -289,7 +295,7 @@ func (fight *FightBattle) GetDefName() string {
 
 func (fight *FightBattle) DebugProcess() {
 	fight.DebugInitInfo()
-	fmt.Println("fight total round:", fight.Round)
+	fmt.Println("总回合数:", fight.Round)
 	for _, process := range fight.Process {
 		//fmt.Println("round:", round)
 		process.Debug()
