@@ -19,6 +19,7 @@ const (
 	ACTION            = iota + 1
 	ACTION_FIGHT_BACK //反击
 	ACTION_DODGE      //闪避
+	ACTION_NO_TARGET  //没有目标
 )
 
 //error code
