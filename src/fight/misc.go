@@ -47,14 +47,10 @@ func Random(num int) int {
 	return n
 }
 
-func RandomBetween2Num(low int64 , upper int64) int64 {
+func RandomBetween2Num(low int64, upper int64) int64 {
 	num := int(upper - low)
 	if num < 0 {
 		return 0
 	}
 	return low + int64(Random(num))
 }
-
-
-
-

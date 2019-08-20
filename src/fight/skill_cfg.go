@@ -1,13 +1,26 @@
 package fight
 
-import(
+import (
 	"gd_config"
 )
 
-func GetCardBaseAtk(cardId int16, level int16) int64 {
-	cardCfg := gd_config.GetCardLevelCfg(cardId, level)
-	if cardCfg == nil {
+type SkillInfo struct {
+	SkillId int16
+	Level   int16
+}
+
+func (skill *SkillInfo) Trigger() bool {
+	return RandomHappen(50)
+}
+
+func (skill *SkillInfo) TargetNum() int {
+	return Random(3)
+}
+
+func (skill *SkillInfo) AtkDis() int16 {
+	skcfg := gd_config.GetSkillCfg(skill.SkillId)
+	if skill == nil {
 		return 0
 	}
-	return RandomBetween2Num(cardCfg.AtkLower , cardCfg.AtkUpper)
+	return skcfg.AtkDis
 }

@@ -7,6 +7,7 @@ type GDCardConfig struct {
 	Level    int16
 	AtkLower int64
 	AtkUpper int64
+	AtkDis   int16
 	Speed    int16
 	SkillId  int16
 	Hp       int64
@@ -22,6 +23,7 @@ type GDSkillConfig struct {
 	Pro         int   //触发概率
 	DamageLower int64 //技能伤害
 	DamageUpper int64 //技能伤害
+	AtkDis      int16
 	TargetNum   int   //攻击数量
 }
 

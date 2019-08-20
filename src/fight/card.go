@@ -1,21 +1,18 @@
 package fight
 
-import(
+import (
 	"gd_config"
-	"fmt"
+	//"fmt"
 )
 
-type SkillInfo struct {
-	SkillId int16
-	Level   int16
+type TotalInfo struct {
+	Type int16
+	Num  int64
 }
 
-func (skill *SkillInfo) Trigger() bool {
-	return RandomHappen(50)
-}
-
-func (skill *SkillInfo) TargetNum() int {
-	return Random(3)
+type StatusInfo struct {
+	Type int16
+	Num  int64
 }
 
 type CardInfo struct {
@@ -26,7 +23,9 @@ type CardInfo struct {
 	Speed     int16
 	Hp        int64
 	InitHp    int64
-	Skills    map[int16]*SkillInfo //pos对应点的技能
+	Skills    map[int16]*SkillInfo  //pos对应点的技能
+	TotalData map[int16]*TotalInfo  //统计数据，比如杀敌数
+	Status    map[int16]*StatusInfo //状态记录
 }
 
 type SortCards []*CardInfo
@@ -44,7 +43,11 @@ func (card *CardInfo) Dead() bool {
 
 //卡牌伤害
 func (card *CardInfo) NormalDamage() int64 {
-	return GetCardBaseAtk(card.CardId, card.CardLevel)
+	cardCfg := gd_config.GetCardLevelCfg(card.CardId, card.CardLevel)
+	if cardCfg == nil {
+		return 0
+	}
+	return RandomBetween2Num(cardCfg.AtkLower, cardCfg.AtkUpper)
 }
 
 func (card *CardInfo) LoseHp(loseHp int64) {
@@ -70,6 +73,25 @@ func (card *CardInfo) GetSkillDamage(skillId int16) int64 {
 	return int64(Random(10))
 }
 
-func Test() {
-	fmt.Println(gd_config.GDData)
+func (card *CardInfo) AddTotalData(typ int16, num int64) {
+	info, ok := card.TotalData[typ] //map[int16]*TotalInfo
+	if !ok {
+		info := &TotalInfo{typ, 0}
+		card.TotalData[typ] = info
+	}
+	info.Num += num
+}
+
+//添加卡牌状态，后期添加状态逻辑
+func (card *CardInfo) AddStatus(info *StatusInfo) bool {
+	card.Status[info.Type] = info
+	return true
+}
+
+func (card *CardInfo) NormalAtkDis() int16 {
+	cardCfg := gd_config.GetCardLevelCfg(card.CardId, card.CardLevel)
+	if cardCfg == nil {
+		return 0
+	}
+	return cardCfg.AtkDis
 }

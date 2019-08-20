@@ -27,7 +27,6 @@ const (
 	ERR_INVALID_SKILL
 )
 
-
 var id2Name = map[int64]string{
 	10000: "四叶草",
 	20000: "如花",

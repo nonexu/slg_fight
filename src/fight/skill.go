@@ -56,12 +56,6 @@ func pktAtkAction(action []int16, damage int64) *AtkAction {
 	}
 }
 
-/*
-
-	ACTION_FIGHT_BACK //反击
-	ACTION_DODGE   //闪避
-
-*/
 //普通攻击
 func NormalAtk(atkCard *CardInfo, defCard *CardInfo, atkSkill *AtkSkill) (int16, *AtkDetail) {
 	damage := atkCard.NormalDamage()

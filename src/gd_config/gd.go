@@ -32,6 +32,7 @@ func loadCardConfig() {
 			Level:    Sto16(fields["Level"]),
 			AtkLower: Sto64(fields["AtkLower"]),
 			AtkUpper: Sto64(fields["AtkUpper"]),
+			AtkDis:    Sto16(fields["AtkDis"]),
 			Speed:    Sto16(fields["Speed"]),
 			SkillId:  Sto16(fields["SkillId"]),
 			Hp: Sto64(fields["Hp"]),
@@ -73,6 +74,7 @@ func loadSkillConfig() {
 			Pro:         Stoi(fields["Pro"]),
 			DamageLower: Sto64(fields["DamageLower"]),
 			DamageUpper: Sto64(fields["DamageUpper"]),
+			AtkDis:       Sto16(fields["AtkDis"]),
 			TargetNum:   Stoi(fields["TargetNum"]),
 		}
 		GDData.GD_SKILL_CFG[info.Id] = info
