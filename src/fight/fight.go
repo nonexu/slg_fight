@@ -286,6 +286,10 @@ func GetCureTarget(atkCard *CardInfo, atk *Fighter, distance int16, num int) []*
 	ids := make([]int, 0)
 
 	for i := 0; i < int(len(atk.Cards)); i++ {
+		card := atk.Cards[i]
+		if card.Dead() {
+			continue
+		}
 		ids = append(ids, i)
 	}
 
