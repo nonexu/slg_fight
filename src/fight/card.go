@@ -70,7 +70,11 @@ func (card *CardInfo) TriggerFightBack() bool {
 }
 
 func (card *CardInfo) GetSkillDamage(skillId int16) int64 {
-	return int64(Random(10))
+	skillCfg := gd_config.GetSkillCfg(skillId, 1)
+	if skillCfg == nil {
+		return 0
+	}
+	return RandomBetween2Num(skillCfg.DamageLower, skillCfg.DamageUpper)
 }
 
 func (card *CardInfo) AddTotalData(typ int16, num int64) {
@@ -94,4 +98,28 @@ func (card *CardInfo) NormalAtkDis() int16 {
 		return 0
 	}
 	return cardCfg.AtkDis
+}
+
+func (card *CardInfo) SkillTrigger(skillId int16) bool {
+	skillCfg := gd_config.GetSkillCfg(skillId, 1)
+	if skillCfg == nil {
+		return false
+	}
+	return RandomHappen(skillCfg.Pro)
+}
+
+func (card *CardInfo) SkillAtkDis(skillId int16) int16 {
+	skillCfg := gd_config.GetSkillCfg(skillId, 1)
+	if skillCfg == nil {
+		return 0
+	}
+	return skillCfg.AtkDis
+}
+
+func (card *CardInfo) SkillTargetNum(skillId int16) int {
+	skillCfg := gd_config.GetSkillCfg(skillId, 1)
+	if skillCfg == nil {
+		return 0
+	}
+	return skillCfg.TargetNum
 }

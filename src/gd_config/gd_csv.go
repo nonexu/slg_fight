@@ -10,7 +10,7 @@ import (
 	//"fmt"
 )
 
-var  path = "../../gd_config/"
+var path = "../../gd_config/"
 
 func init() {
 	LoadTables()

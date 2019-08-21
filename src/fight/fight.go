@@ -44,7 +44,7 @@ func (fighter *Fighter) AddCard(userId int64, pos int16, cardId int16, cardLevel
 	}
 
 	if cardCfg.SkillId != 0 {
-		card.Skills[1] = &SkillInfo{3, 1}
+		card.Skills[1] = &SkillInfo{cardCfg.SkillId, 1}
 	}
 	fighter.Cards = append(fighter.Cards, card)
 }
@@ -72,12 +72,12 @@ type AtkDetail struct {
 	AtkUserId int64
 	DefUserId int64
 
-	AtkCard int16
-	DefCard int16
-	AtkStatus []int16  //攻击方异常
+	AtkCard   int16
+	DefCard   int16
+	AtkStatus []int16 //攻击方异常
 
 	//AtkType   int16 //攻击类型，普通攻击，技能攻击，反击
-	SkillType  int16   //特效类型
+	SkillId    int16   //特效类型
 	ActionType []int16 //是否触发闪避类防守方
 	LoseHp     int64
 	FinalHp    int64
@@ -85,8 +85,8 @@ type AtkDetail struct {
 }
 
 type AtkSkill struct {
-	AtkType   int16 //攻击类型，普通攻击，技能攻击，反击
-	SkillType int16 ////特效类型 技能
+	AtkType int16 //攻击类型，普通攻击，技能攻击，反击, 效果同样的
+	SkillId int16 ////特效类型 技能
 }
 
 type FightProcess struct {
@@ -107,7 +107,7 @@ func (atkProcess *AtkDetail) DebugAtk() {
 	atkName := id2Name[atkProcess.AtkUserId]
 	defName := id2Name[atkProcess.DefUserId]
 
-	skillCfg := gd_config.GetSkillCfg(atkProcess.SkillType)
+	skillCfg := gd_config.GetSkillCfg(atkProcess.SkillId, 1)
 	if atkCardCfg == nil || defCardCfg == nil || skillCfg == nil {
 		return
 	}
@@ -143,11 +143,10 @@ func (atkProcess *AtkDetail) DebugAtk() {
 }
 
 func (atkProcess *AtkDetail) DebugAtkException() {
-
 	atkCardCfg := gd_config.GetCardCfg(atkProcess.AtkCard)
 	atkName := id2Name[atkProcess.AtkUserId]
 
-	skillCfg := gd_config.GetSkillCfg(atkProcess.SkillType)
+	skillCfg := gd_config.GetSkillCfg(atkProcess.SkillId, 1)
 	if atkCardCfg == nil || skillCfg == nil {
 		return
 	}
@@ -155,7 +154,7 @@ func (atkProcess *AtkDetail) DebugAtkException() {
 	str1 := ""
 	for _, status := range atkProcess.AtkStatus {
 		if status == ACTION_NO_TARGET {
-			str1 = fmt.Sprintf("    [%v]'的[%v] 使用  [%v] 攻击, 攻击范围内没有目标", atkName, atkCardCfg.Name, skillCfg.Name)	
+			str1 = fmt.Sprintf("    [%v]'的[%v] 使用  [%v] 攻击, 攻击范围内没有目标", atkName, atkCardCfg.Name, skillCfg.Name)
 		}
 	}
 
@@ -168,7 +167,6 @@ func (atkProcess *AtkDetail) DebugAtkException() {
 	}
 
 }
-
 
 func (process *FightProcess) Debug() {
 	fmt.Printf("第 %v 回合\n", process.Round)
@@ -274,10 +272,35 @@ func GetAtkTarget(atkCard *CardInfo, atk *Fighter, def *Fighter, distance int16,
 	return cards
 }
 
+//查找攻击目标
+func (fight *FightBattle) GetCureTarget(atkCard *CardInfo, distance int16, num int) []*CardInfo {
+	if atkCard.UserId == fight.AtkInfo.UserId {
+		return GetCureTarget(atkCard, fight.AtkInfo, distance, num)
+	} else {
+		return GetCureTarget(atkCard, fight.DefInfo, distance, num)
+	}
+}
+
+func GetCureTarget(atkCard *CardInfo, atk *Fighter, distance int16, num int) []*CardInfo {
+	cards := make([]*CardInfo, 0)
+	ids := make([]int, 0)
+
+	for i := 0; i < int(len(atk.Cards)); i++ {
+		ids = append(ids, i)
+	}
+
+	ids = RandomIds(ids, num)
+	for _, pos := range ids {
+		cards = append(cards, atk.Cards[pos])
+	}
+	return cards
+}
+
 //开始攻击
 func (fight *FightBattle) AtkFight(atkCard *CardInfo) {
 	//普通攻击
 	fight.NormalAtk(atkCard)
+	//技能攻击
 	fight.SkillAtk(atkCard)
 }
 
@@ -286,18 +309,9 @@ func (fight *FightBattle) NormalAtk(atkCard *CardInfo) {
 	if atkCard.Dead() {
 		return
 	}
-
-	targets := fight.GetAtkTarget(atkCard, atkCard.NormalAtkDis(), 1) //攻击目标数量为1
-	//攻击范围类没有攻击目标
-	if len(targets) == 0 {	
-		fight.Process[fight.Round-1].AtkTree = append(fight.Process[fight.Round-1].AtkTree, fight.NoTargetDetail(atkCard, &AtkSkill{AtkType: ATK_TYPE_NORMAL_ATK, SkillType: NORMAL_ATK}, int16(ACTION_NO_TARGET)))
-	}
-
-	for _, card := range targets {
-		ret, atkInfo := fight.DoAtk(atkCard, card, &AtkSkill{AtkType: ATK_TYPE_NORMAL_ATK, SkillType: NORMAL_ATK})
-		if ret == OK {
-			fight.Process[fight.Round-1].AtkTree = append(fight.Process[fight.Round-1].AtkTree, atkInfo)
-		}
+	ret := fight.DoAtk(atkCard, &AtkSkill{AtkType: ATK_TYPE_NORMAL_ATK, SkillId: NORMAL_ATK})
+	if ret != OK {
+		fmt.Println("fight error:", ret)
 	}
 }
 
@@ -311,7 +325,7 @@ func (fight *FightBattle) SkillAtk(atkCard *CardInfo) {
 		if !ok {
 			continue
 		}
-		
+
 		if fight.Done() {
 			break
 		}
@@ -320,41 +334,20 @@ func (fight *FightBattle) SkillAtk(atkCard *CardInfo) {
 }
 
 func (fight *FightBattle) CardSkillAction(atkCard *CardInfo, skill *SkillInfo) {
-	if !skill.Trigger() {
+	skillCfg := gd_config.GetSkillCfg(skill.SkillId, skill.Level)
+	if skillCfg == nil {
+		fmt.Println("skill cfg miss:", skill.SkillId, skill.Level)
 		return
 	}
 
-	targets := fight.GetAtkTarget(atkCard, skill.AtkDis(), skill.TargetNum())
-
-	//攻击范围类没有攻击目标
-	if len(targets) == 0 {	
-		fight.Process[fight.Round-1].AtkTree = append(fight.Process[fight.Round-1].AtkTree, fight.NoTargetDetail(atkCard, &AtkSkill{AtkType: ATK_TYPE_SKILL_DIRECT, SkillType: SKILL_DIRECT_ATK}, int16(ACTION_NO_TARGET)))
-	}
-
-	for _, card := range targets {
-		ret, atkInfo := fight.DoAtk(atkCard, card, &AtkSkill{AtkType: ATK_TYPE_SKILL_DIRECT, SkillType: SKILL_DIRECT_ATK})
-		if ret == OK {
-			fight.Process[fight.Round-1].AtkTree = append(fight.Process[fight.Round-1].AtkTree, atkInfo)
-		}
+	ret := fight.DoAtk(atkCard, &AtkSkill{AtkType: skillCfg.AtkType, SkillId: skillCfg.SkillId})
+	if ret != OK {
+		fmt.Println("fight error:", ret)
 	}
 }
 
-func (fight *FightBattle) NoTargetDetail(atkCard *CardInfo, atkSkill *AtkSkill, status int16)  *AtkDetail {
-	info := &AtkDetail{
-		AtkUserId : atkCard.UserId,
-		AtkCard : atkCard.CardId,
-		//AtkType   int16 //攻击类型，普通攻击，技能攻击，反击
-		AtkStatus: make([]int16, 0),
-		SkillType: atkSkill.SkillType, //特效类型
-		ActionType: make([]int16, 0), //是否触发闪避类
-		Trigger:  make([]*AtkDetail, 0), //触发的技能
-	}
-	info.AtkStatus = append(info.AtkStatus, status)
-	return info
-}
-
-func (fight *FightBattle) DoAtk(atkCard *CardInfo, defCard *CardInfo, atkSkill *AtkSkill) (int16, *AtkDetail) {
-	return Invoke(atkSkill.AtkType, atkCard, defCard, atkSkill)
+func (fight *FightBattle) DoAtk(atkCard *CardInfo, atkSkill *AtkSkill) int16 {
+	return InvokeSkill(atkSkill.AtkType, atkCard, atkSkill, fight)
 }
 
 func (fight *FightBattle) Result() bool {
@@ -406,11 +399,11 @@ func InitFight() *FightBattle {
 
 	fightBattle.AddCard(true, 10000, 1, 1, 1)
 	fightBattle.AddCard(true, 10000, 2, 3, 1)
-	//fightBattle.AddCard(true, 10000, 2, 2, 1, 3, 100)
+	fightBattle.AddCard(true, 10000, 3, 5, 1) //, 3, 100)
 	//fightBattle.AddCard(true, 10000, 3, 3, 1, 2, 100)
 	fightBattle.AddCard(false, 20000, 1, 2, 1)
 	fightBattle.AddCard(false, 20000, 2, 4, 1)
-	//fightBattle.AddCard(false, 20000, 2, 2, 1, 3, 100)
+	fightBattle.AddCard(false, 20000, 3, 6, 1) //, 3, 100)
 	//fightBattle.AddCard(false, 20000, 3, 3, 1, 2, 100)
 	return fightBattle
 }

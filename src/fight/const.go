@@ -2,23 +2,25 @@ package fight
 
 //攻击类型
 const (
-	ATK_TYPE_NORMAL_ATK       = iota + 1 //直接攻击
-	ATK_TYPE_SKILL_DIRECT                //技能直接攻击
-	ATK_TYPE_SKILL_STATUS_ADD            //状态加成
+	ATK_TYPE_NORMAL_ATK        = iota + 1 //直接攻击
+	ATK_TYPE_SKILL_DIRECT                 //技能直接攻击
+	ATK_TYPE_SKILL_DIRECT_CURE            //直接治愈
+	ATK_TYPE_SKILL_STATUS_ADD             //状态加成
 )
 
 //skill， 主动触发
 const (
-	NORMAL_ATK       = iota + 1 //普通攻击
-	FIGHT_BACK_ATK              //反击
-	SKILL_DIRECT_ATK            //技能直接攻击
+	NORMAL_ATK        = iota + 1 //普通攻击
+	FIGHT_BACK_ATK               //反击
+	SKILL_DIRECT_ATK             //野火燎原
+	SKILL_DIRECT_CURE            //治疗
 )
 
 //action效果
 const (
 	ACTION            = iota + 1
 	ACTION_FIGHT_BACK //反击
-	ACTION_DODGE      //闪避
+	ACTION_MISS       //闪避
 	ACTION_NO_TARGET  //没有目标
 )
 
@@ -26,6 +28,7 @@ const (
 const (
 	OK = iota + 1
 	ERR_INVALID_SKILL
+	ERR_CFG_MISS
 )
 
 var id2Name = map[int64]string{

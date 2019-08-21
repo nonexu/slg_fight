@@ -1,6 +1,7 @@
 package fight
 
 import (
+	"fmt"
 	"gd_config"
 )
 
@@ -18,8 +19,9 @@ func (skill *SkillInfo) TargetNum() int {
 }
 
 func (skill *SkillInfo) AtkDis() int16 {
-	skcfg := gd_config.GetSkillCfg(skill.SkillId)
-	if skill == nil {
+	fmt.Println("skillid", skill.SkillId)
+	skcfg := gd_config.GetSkillCfg(skill.SkillId, skill.Level)
+	if skcfg == nil {
 		return 0
 	}
 	return skcfg.AtkDis

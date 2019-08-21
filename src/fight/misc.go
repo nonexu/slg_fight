@@ -31,7 +31,6 @@ func RandomIds(ids []int, num int) []int {
 	for id, _ := range idMap {
 		newIds = append(newIds, id)
 	}
-
 	return newIds
 }
 

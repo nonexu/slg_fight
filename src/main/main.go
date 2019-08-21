@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fight"
 	"fmt"
 	"time"
-	"fight"
 )
 
 func main() {
@@ -17,7 +17,6 @@ func main() {
 	} else {
 		winner = fight.GetDefName()
 	}
-
 
 	str := fmt.Sprintf("%v 获胜!!!", winner)
 	fmt.Printf("%c[%d;%d;%dm%s%c[0m", 0x1B, 0, 0, 32, str, 0x1B)
