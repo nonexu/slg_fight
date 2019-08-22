@@ -19,6 +19,7 @@ func init() {
 	registerSkillFunc(ATK_TYPE_NORMAL_ATK, NormalAtkBehavior)
 	registerSkillFunc(ATK_TYPE_SKILL_DIRECT, SkillDirectAtk)
 	registerSkillFunc(ATK_TYPE_SKILL_DIRECT_CURE, SkillCure)
+	registerSkillFunc(ATK_TYPE_SKILL_STATUS_ADD, StatusAdd)
 }
 
 //同一种效果的攻击， 可以用同样的回调函数处理
@@ -95,13 +96,14 @@ func NormalAtkBehavior(atkCard *CardInfo, atkSkill *AtkSkill, fight *FightBattle
 func doNormalAtk(atkCard *CardInfo, defCard *CardInfo, atkSkill *AtkSkill) (int16, *AtkDetail) {
 	damage := atkCard.NormalDamage()
 	action := make([]int16, 0)
-	if defCard.TriggerDodge() {
+	if defCard.TriggerMiss() {
 		action = append(action, int16(ACTION_MISS))
 		damage = 0
 	}
 
-	defCard.LoseHp(damage)
+	damage = defCard.LoseHp(damage)
 	atkDetail := pktAtkDetail(atkCard, defCard, atkSkill, pktAtkAction(action, damage))
+	atkCard.AddTotalData(KILL_NUM, damage)
 
 	if defCard.TriggerFightBack() {
 		ret, fightBack := FightBackAtk(defCard, atkCard, &AtkSkill{ATK_TYPE_NORMAL_ATK, FIGHT_BACK_ATK})
@@ -118,13 +120,14 @@ func doNormalAtk(atkCard *CardInfo, defCard *CardInfo, atkSkill *AtkSkill) (int1
 func FightBackAtk(atkCard *CardInfo, defCard *CardInfo, atkSkill *AtkSkill) (int16, *AtkDetail) {
 	damage := atkCard.NormalDamage()
 	action := make([]int16, 0)
-	if defCard.TriggerDodge() {
+	if defCard.TriggerMiss() {
 		action = append(action, int16(ACTION_MISS))
 		damage = 0
 	}
 
-	defCard.LoseHp(damage)
+	damage = defCard.LoseHp(damage)
 	atkDetail := pktAtkDetail(atkCard, defCard, atkSkill, pktAtkAction(action, damage))
+	atkCard.AddTotalData(KILL_NUM, damage)
 	return OK, atkDetail
 }
 
@@ -133,6 +136,7 @@ func SkillDirectAtk(atkCard *CardInfo, atkSkill *AtkSkill, fight *FightBattle) i
 	if !atkCard.SkillTrigger(atkSkill.SkillId) {
 		return OK
 	}
+	atkCard.AddTotalData(SKILL_NUM, 1)
 
 	targets := fight.GetAtkTarget(atkCard, atkCard.SkillAtkDis(atkSkill.SkillId), atkCard.SkillTargetNum(atkSkill.SkillId))
 	//fmt.Println("SKILL NUM", atkCard.SkillAtkDis(atkSkill.SkillId), atkCard.SkillTargetNum(atkSkill.SkillId), targets)
@@ -154,12 +158,13 @@ func SkillDirectAtk(atkCard *CardInfo, atkSkill *AtkSkill, fight *FightBattle) i
 func doSkillDirectAttack(atkCard *CardInfo, defCard *CardInfo, atkSkill *AtkSkill) (int16, *AtkDetail) {
 	action := make([]int16, 0)
 	damage := atkCard.GetSkillDamage(atkSkill.SkillId)
-	if defCard.TriggerDodge() {
+	if defCard.TriggerMiss() {
 		action = append(action, int16(ACTION_MISS))
 		damage = 0
 	}
-	defCard.LoseHp(damage)
+	damage = defCard.LoseHp(damage)
 	atkDetail := pktAtkDetail(atkCard, defCard, atkSkill, pktAtkAction(action, damage))
+	atkCard.AddTotalData(KILL_NUM, damage)
 	return OK, atkDetail
 }
 
@@ -167,7 +172,7 @@ func SkillCure(atkCard *CardInfo, atkSkill *AtkSkill, fight *FightBattle) int16 
 	if !atkCard.SkillTrigger(atkSkill.SkillId) {
 		return OK
 	}
-
+	atkCard.AddTotalData(SKILL_NUM, 1)
 	targets := fight.GetCureTarget(atkCard, atkCard.SkillAtkDis(atkSkill.SkillId), atkCard.SkillTargetNum(atkSkill.SkillId))
 
 	if len(targets) == 0 {
@@ -190,5 +195,44 @@ func doSkillDirectCure(atkCard *CardInfo, defCard *CardInfo, atkSkill *AtkSkill)
 	damage := atkCard.GetSkillDamage(atkSkill.SkillId)
 	defCard.LoseHp(-damage)
 	atkDetail := pktAtkDetail(atkCard, defCard, atkSkill, pktAtkAction(action, -damage))
+	atkCard.AddTotalData(CURE_NUM, damage)
+	return OK, atkDetail
+}
+
+//加状态
+func StatusAdd(atkCard *CardInfo, atkSkill *AtkSkill, fight *FightBattle) int16 {
+	if !atkCard.SkillTrigger(atkSkill.SkillId) {
+		return OK
+	} //是否触发
+	atkCard.AddTotalData(SKILL_NUM, 1)
+	targets := fight.GetAtkTarget(atkCard, atkCard.SkillAtkDis(atkSkill.SkillId), atkCard.SkillTargetNum(atkSkill.SkillId))
+	if len(targets) == 0 {
+		fight.Process[fight.Round-1].AtkTree = append(fight.Process[fight.Round-1].AtkTree,
+			pktNoTargetAtkDetail(atkCard, atkSkill, ACTION_NO_TARGET))
+	}
+
+	for _, card := range targets {
+		ret, atkInfo := doStatusAdd(atkCard, card, atkSkill)
+		if ret == OK {
+			fight.Process[fight.Round-1].AtkTree = append(fight.Process[fight.Round-1].AtkTree, atkInfo)
+		}
+	}
+	return OK
+}
+
+func doStatusAdd(atkCard *CardInfo, defCard *CardInfo, atkSkill *AtkSkill) (int16, *AtkDetail) {
+	action := make([]int16, 0)
+	damage := atkCard.GetSkillDamage(atkSkill.SkillId)
+	skStatus := atkCard.GetSkillStatus(atkSkill.SkillId)
+
+	status := &StatusInfo{
+		AtkUserId: atkCard.UserId,
+		CardId:    atkCard.CardId,
+		SkillId:   atkSkill.SkillId,
+		Status:    skStatus,
+		Damage:    damage,
+	}
+	atkDetail := pktAtkDetail(atkCard, defCard, atkSkill, pktAtkAction(action, 0)) //技能触发的时候，没有伤害，伤害在卡牌战斗时触发
+	defCard.AddStatus(status)
 	return OK, atkDetail
 }

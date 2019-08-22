@@ -35,7 +35,7 @@ func RandomIds(ids []int, num int) []int {
 }
 
 func RandomHappen(percent int) bool {
-	return rd.Intn(100) > percent
+	return rd.Intn(100) < percent
 }
 
 func Random(num int) int {
@@ -51,5 +51,9 @@ func RandomBetween2Num(low int64, upper int64) int64 {
 	if num < 0 {
 		return 0
 	}
+	if num == 0 {
+		return low
+	}
+
 	return low + int64(Random(num))
 }

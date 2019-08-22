@@ -22,6 +22,13 @@ const (
 	ACTION_FIGHT_BACK //反击
 	ACTION_MISS       //闪避
 	ACTION_NO_TARGET  //没有目标
+	ACTION_POISONED   //中毒
+)
+
+const (
+	KILL_NUM  = iota + 1 //杀敌数
+	CURE_NUM             //治疗数
+	SKILL_NUM            //技能释放数
 )
 
 //error code
